@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>3P SIC Item Crawler</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <h1>🔍 3P SIC Item Crawler</h1>
+            <div class="nav-tools">
+                <!-- Empty as requested -->
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <!-- Scraping Card -->
+            <div class="card">
+                <h2>🚀 Crawl New Data</h2>
+                <div class="form-group">
+                    <label for="category">📂 Select Category:</label>
+                    <select id="category" name="category" class="amazon-select">
+                        {% for category in categories %}
+                        <option value="{{ category }}">{{ category | title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="actions">
+                    <button onclick="startScraping()" id="scrapeBtn" class="amazon-button primary">🔎 Start Crawling</button>
+                </div>
+
+                <div id="status" class="status"></div>
+                <div id="download-container" class="mt-20" style="display: none;">
+                    <a id="download-link" href="#" class="amazon-button secondary">📥 Download Scraped Data</a>
+                </div>
+            </div>
+
+            <!-- User Guide Card -->
+            <div class="card mt-20">
+                <h2>📚 User Guide</h2>
+                <div class="guide-content">
+                    <h3>✨ How to use the crawler:</h3>
+                    <ol>
+                        <li>📋 Select the product category from the dropdown above</li>
+                        <li>▶️ Click the "Start Crawling" button</li>
+                        <li>🌐 A Chrome browser window will open</li>
+                        <li>👆 You may need to interact with the browser:
+                            <ul>
+                                <li>🔍 Navigate to specific subcategories if needed</li>
+                                <li>🍪 Accept any cookies or notifications that appear</li>
+                                <li>🤖 The crawler will automatically collect data from visible products</li>
+                            </ul>
+                        </li>
+                        <li>✅ When crawling completes, a download button will appear</li>
+                        <li>💾 Click the download button to get your Excel file with the crawled data</li>
+                    </ol>
+                    <p><strong>⚠️ Note:</strong> Please do not close the browser window until crawling is complete.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+    let currentTimestamp = null;
+
+    async function startScraping() {
+        const category = document.getElementById('category').value;
+        const statusDiv = document.getElementById('status');
+        const scrapeBtn = document.getElementById('scrapeBtn');
+
+        scrapeBtn.disabled = true;
+        statusDiv.innerHTML = 'Crawling in progress...';
+
+        try {
+            const response = await fetch('/start_scraping', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `category=${category}`
+            });
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                statusDiv.innerHTML = data.message;
+                currentTimestamp = data.timestamp;
+                
+                // Show download link
+                const downloadContainer = document.getElementById('download-container');
+                const downloadLink = document.getElementById('download-link');
+                downloadContainer.style.display = 'block';
+                downloadLink.href = data.download_url;
+                downloadLink.download = data.filename;
+            } else {
+                statusDiv.innerHTML = `Error: ${data.message}`;
+            }
+        } catch (error) {
+            statusDiv.innerHTML = `Error: ${error}`;
+        } finally {
+            scrapeBtn.disabled = false;
+        }
+    }
+
+    async function startProcessing() {
+        const category = document.getElementById('category').value;
+        const statusDiv = document.getElementById('status');
+        const processBtn = document.getElementById('processBtn');
+
+        processBtn.disabled = true;
+        statusDiv.innerHTML = 'Processing in progress...';
+
+        try {
+            const response = await fetch('/start_processing', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `category=${category}&timestamp=${currentTimestamp}`
+            });
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                statusDiv.innerHTML = `${data.message}<br>Output file: ${data.output_file}`;
+            } else {
+                statusDiv.innerHTML = `Error: ${data.message}`;
+            }
+        } catch (error) {
+            statusDiv.innerHTML = `Error: ${error}`;
+        } finally {
+            processBtn.disabled = false;
+        }
+    }
+
+    async function processUploadedFile() {
+        const category = document.getElementById('uploadCategory').value;
+        const fileInput = document.getElementById('fileUpload');
+        const statusDiv = document.getElementById('uploadStatus');
+        const processBtn = document.getElementById('processUploadBtn');
+
+        if (!fileInput.files[0]) {
+            statusDiv.innerHTML = 'Please select a file first';
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('category', category);
+
+        processBtn.disabled = true;
+        statusDiv.innerHTML = 'Processing file...';
+
+        try {
+            const response = await fetch('/process_uploaded_file', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                statusDiv.innerHTML = `${data.message}<br>Output file: ${data.output_file}`;
+            } else {
+                statusDiv.innerHTML = `Error: ${data.message}`;
+            }
+        } catch (error) {
+            statusDiv.innerHTML = `Error: ${error}`;
+        } finally {
+            processBtn.disabled = false;
+        }
+    }
+    </script>
+</body>
+</html> 
