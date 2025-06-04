@@ -15,13 +15,25 @@ from io import BytesIO
 from datetime import datetime
 
 def start_scraping(category=None, save_to_s3=False, s3_bucket=None, user_interaction_needed=True):
-    # Selenium WebDriver setup - not headless to allow user interaction
+    # Selenium WebDriver setup
     chrome_options = Options()
     
-    # Only add these arguments if user interaction is not needed
+    # Add required arguments for Docker/containerized environment
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--disable-extensions")
+    chrome_options.add_argument("--disable-software-rasterizer")
+    
+    # Only add headless if user interaction is not needed
     if not user_interaction_needed:
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--headless")
+    
+    # Add window size
+    chrome_options.add_argument("--window-size=1920,1080")
+    
+    # Add remote debugging port
+    chrome_options.add_argument("--remote-debugging-port=9222")
     
     # Use chromedriver from PATH if in production, otherwise use the specified path
     if os.environ.get('DEPLOYMENT') == 'production':
