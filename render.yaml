@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: 3p-sic-crawler
+    env: docker
+    plan: standard
+    branch: master
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: DEPLOYMENT
+        value: production
+      - key: FLASK_DEBUG
+        value: 0
+      - key: USE_S3
+        value: false
+      - key: DISPLAY
+        value: :99

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>3P SIC Item Crawler</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <h1>🔍 3P SIC Item Crawler</h1>
+            <div class="nav-tools">
+                <!-- Empty as requested -->
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Start Crawling</h2>
+                </div>
+                <div class="card-body">
+                    <form id="scrape-form" action="/start_scraping" method="post">
+                        <div class="form-group">
+                            <label for="category">Select Category:</label>
+                            <select id="category" name="category" required>
+                                <option value="">-- Select a Category --</option>
+                                {% for category in categories %}
+                                <option value="{{ category }}">{{ category }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn primary">Start Crawling 🚀</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div id="results" class="card" style="display: none;">
+                <div class="card-header">
+                    <h2>Results</h2>
+                </div>
+                <div class="card-body">
+                    <div id="status-message" class="status-message"></div>
+                    <div id="download-section" style="display: none;">
+                        <a id="download-link" class="btn secondary" target="_blank">Download Results 📊</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card guide-card">
+                <div class="card-header">
+                    <h2>📚 User Guide</h2>
+                </div>
+                <div class="card-body">
+                    <div class="guide-section">
+                        <h3>🚀 How to Use the Crawler</h3>
+                        <ol>
+                            <li>Select a product category from the dropdown menu</li>
+                            <li>Click the "Start Crawling" button to begin the crawling process</li>
+                            <li>Wait for the crawler to finish (this may take several minutes)</li>
+                            <li>Once complete, download the results file</li>
+                        </ol>
+                    </div>
+                    <div class="guide-section">
+                        <h3>📊 About the Data</h3>
+                        <p>The crawler collects the following information from Trendyol:</p>
+                        <ul>
+                            <li>Product names and details</li>
+                            <li>Prices and discounts</li>
+                            <li>Seller information</li>
+                            <li>Ratings and review counts</li>
+                        </ul>
+                    </div>
+                    <div class="guide-section">
+                        <h3>⚠️ Important Notes</h3>
+                        <ul>
+                            <li>The crawler may take several minutes to complete depending on the category</li>
+                            <li>For some categories, you may need to interact with CAPTCHA challenges</li>
+                            <li>Data is saved automatically and can be downloaded when complete</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <p>© 2025 3P SIC Crawler - Amazon-themed UI</p>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('scrape-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show results card and status message
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('status-message').innerHTML = '<div class="loading">Crawling in progress... Please wait ⏳</div>';
+            document.getElementById('download-section').style.display = 'none';
+            
+            // Disable the submit button
+            document.querySelector('button[type="submit"]').disabled = true;
+            
+            // Get form data
+            const formData = new FormData(this);
+            
+            // Send AJAX request
+            fetch('/start_scraping', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                // Store the response for debugging
+                const contentType = response.headers.get('content-type');
+                if (!response.ok) {
+                    throw new Error(`Network error: ${response.status} ${response.statusText}`);
+                }
+                
+                // Check if the response is JSON
+                if (!contentType || !contentType.includes('application/json')) {
+                    return response.text().then(text => {
+                        throw new Error(`Expected JSON response but got: ${text.substring(0, 100)}...`);
+                    });
+                }
+                
+                return response.json().catch(err => {
+                    throw new Error(`JSON parsing error: ${err.message}. This may be due to an incomplete response from the server.`);
+                });
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById('status-message').innerHTML = 
+                        '<div class="success">✅ ' + data.message + '</div>';
+                    document.getElementById('download-section').style.display = 'block';
+                    document.getElementById('download-link').href = data.download_url;
+                    document.getElementById('download-link').innerHTML = 'Download Results (' + data.filename + ') 📊';
+                } else {
+                    document.getElementById('status-message').innerHTML = 
+                        '<div class="error">❌ Error: ' + data.message + '</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error details:', error);
+                document.getElementById('status-message').innerHTML = 
+                    '<div class="error">❌ Error: ' + error.message + '</div>';
+            })
+            .finally(() => {
+                // Re-enable the submit button
+                document.querySelector('button[type="submit"]').disabled = false;
+            });
+        });
+    </script>
+</body>
+</html>
