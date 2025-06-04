@@ -3,7 +3,7 @@ services:
     name: 3p-sic-crawler
     env: docker
     plan: standard
-    branch: master
+    branch: main
     envVars:
       - key: PORT
         value: 8080
